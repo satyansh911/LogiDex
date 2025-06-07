@@ -7,15 +7,15 @@ interface Props {
     isActive?: boolean;
 }
 
-const LordBillingIcon: React.FC<Props> = ({ size = 24, isActive = false}) => {
+const LordBillingBlackIcon: React.FC<Props> = ({ size = 27, isActive = false}) => {
     return (
         <Player
             autoplay
             loop
-            src={ isActive ? "/Billing-active.json" : "/Billing.json"}
+            src="/Billing-yellow.json"
             style={{ height: size, width: size}}
             />
     );
 };
 
-export default LordBillingIcon;
+export default LordBillingBlackIcon;

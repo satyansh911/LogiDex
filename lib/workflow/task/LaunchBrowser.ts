@@ -1,4 +1,4 @@
-import { TaskType } from "@/types/task";
+import { TaskParamType, TaskType } from "@/types/task";
 import {GlobeIcon, LucideProps } from "lucide-react";
 import { useEffect } from "react";
 import lottie from 'lottie-web';
@@ -10,4 +10,13 @@ export const LaunchBrowserTask = {
     label: "Launch Browser",
     icons: LaunchBrowserIcon,
     isEntryPoint: true,
+    inputs: [
+        {
+            name: "Website URL",
+            type: TaskParamType.STRING,
+            helperText: "Eg: https://www.google.com",
+            required: true,
+            hideHandle: true,
+        }
+    ]
 };
