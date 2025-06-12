@@ -3,7 +3,9 @@
 import LordBillingBlackIcon from '@/components/icons/Billing-black';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CreateFlowNode } from '@/lib/workflow/createFlowNode';
 import { TaskRegistry } from '@/lib/workflow/task/registry';
+import { AppNode } from '@/types/appNode';
 import { TaskType } from '@/types/task';
 import { useReactFlow } from '@xyflow/react';
 import { CopyIcon, GripVerticalIcon, TrashIcon } from 'lucide-react';
@@ -11,7 +13,7 @@ import React from 'react'
 
 function NodeHeader({taskType, nodeId}: {taskType: TaskType, nodeId: string}) {
     const task = TaskRegistry[taskType];
-    const {deleteElements} = useReactFlow();
+    const {deleteElements, getNode, addNodes} = useReactFlow();
   return (
     <div className='flex items-center gap-2 p-2'>
         <task.icons size={16} />
@@ -32,7 +34,16 @@ function NodeHeader({taskType, nodeId}: {taskType: TaskType, nodeId: string}) {
                             nodes: [{id: nodeId}]
                         })
                     }}><TrashIcon size={12} /></Button>
-                    <Button variant={"ghost"} size={"icon"}><CopyIcon size={12} /></Button>
+                    <Button variant={"ghost"} size={"icon"} onClick={() => {
+                        const node = getNode(nodeId) as AppNode;
+                        const newX = node.position.x;
+                        const newY = node.position.y + node.measured?.height! + 20;
+                        const newNode = CreateFlowNode(node.data.type,{
+                            x: newX,
+                            y: newY,
+                        });
+                        addNodes([newNode])
+                    }}><CopyIcon size={12} /></Button>
                     </>
                 )}
                 <Button
