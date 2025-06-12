@@ -28,7 +28,7 @@ function TaskMenu() {
 
 function TaskMenuBtn({taskType}: {taskType: TaskType}){
     const task = TaskRegistry[taskType];
-    const Icon = task.icons;
+    const Icon = task.icon;
     const onDragStart = (event: React.DragEvent, type: TaskType) => {
         event.dataTransfer.setData("application/reactflow", type);
         event.dataTransfer.effectAllowed = "move";

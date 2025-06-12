@@ -4,12 +4,14 @@ import { useEffect } from "react";
 import lottie from 'lottie-web';
 import {defineElement} from 'lord-icon-element';
 import LaunchBrowserIcon from "@/components/icons/LaunchBrowserIcon";
+import { WorkflowTask } from "@/types/workflow";
 
 export const LaunchBrowserTask = {
     type: TaskType.LAUNCH_BROWSER,
     label: "Launch Browser",
-    icons: LaunchBrowserIcon,
+    icon: LaunchBrowserIcon,
     isEntryPoint: true,
+    credits: 5,
     inputs: [
         {
             name: "Website URL",
@@ -20,6 +22,6 @@ export const LaunchBrowserTask = {
         }
     ],
     outputs: [
-        {name: "Web page", type: TaskParamType.BROWSER_INSTANCE}
+        { name: "Web page", type: TaskParamType.BROWSER_INSTANCE }
     ],
-};
+} satisfies WorkflowTask;

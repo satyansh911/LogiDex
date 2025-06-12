@@ -16,7 +16,7 @@ function NodeHeader({taskType, nodeId}: {taskType: TaskType, nodeId: string}) {
     const {deleteElements, getNode, addNodes} = useReactFlow();
   return (
     <div className='flex items-center gap-2 p-2'>
-        <task.icons size={16} />
+        <task.icon size={16} />
         <div className='flex justify-between items-center w-full'>
             <p className='text-xs font-bold uppercase text-muted-foreground'>
                 {task.label}
@@ -25,7 +25,7 @@ function NodeHeader({taskType, nodeId}: {taskType: TaskType, nodeId: string}) {
                 {task.isEntryPoint && <Badge>Entry point</Badge>}
                 <Badge className='gap-1 flex items-center text-xs'>
                     {LordBillingBlackIcon({size: 12})}
-                    TODO
+                    {task.credits}
                 </Badge>
                 {!task.isEntryPoint && (
                     <>

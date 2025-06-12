@@ -82,7 +82,7 @@ function FlowEditor({workflow}: {workflow: Workflow}) {
         const targetTask = TaskRegistry[target.data.type];
 
         const output = sourceTask.outputs.find((o) => o.name === connection.sourceHandle);
-        const input = sourceTask.inputs.find((o) => o.name === connection.targetHandle);
+        const input = targetTask.inputs.find((o) => o.name === connection.targetHandle);
         if(input?.type !== output?.type){
             console.error("Invalid connection: type mismatch");
             return false;

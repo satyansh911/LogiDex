@@ -4,12 +4,14 @@ import { useEffect } from "react";
 import lottie from 'lottie-web';
 import {defineElement} from 'lord-icon-element';
 import TextIcon from "@/components/icons/TextIcon";
+import { WorkflowTask } from "@/types/workflow";
 
 export const ExtractTextFromElementTask = {
     type: TaskType.EXTRACT_TEXT_FROM_ELEMENT,
     label: "Extract text from element",
-    icons: TextIcon,
+    icon: TextIcon,
     isEntryPoint: false,
+    credits: 2,
     inputs: [
         {
             name: "Html",
@@ -29,4 +31,4 @@ export const ExtractTextFromElementTask = {
             type: TaskParamType.STRING
         }
     ],
-};
+} satisfies WorkflowTask;

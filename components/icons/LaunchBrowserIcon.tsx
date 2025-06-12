@@ -1,5 +1,6 @@
 "use client";
 import { Player } from "@lottiefiles/react-lottie-player";
+import { LucideProps } from "lucide-react";
 import React from "react";
 
 interface Props {
@@ -7,7 +8,7 @@ interface Props {
     isActive?: boolean;
 }
 
-const Lord404Icon: React.FC<Props> = ({ size = 24}) => {
+const Lord404Icon: React.FC<LucideProps> = ({ size = 24}) => {
     return (
         <Player
             autoplay
