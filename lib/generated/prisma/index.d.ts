@@ -45,7 +45,7 @@ export type ExecutionPhase = $Result.DefaultSelection<Prisma.$ExecutionPhasePayl
  */
 export class PrismaClient<
   ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
-  U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
+  const U = 'log' extends keyof ClientOptions ? ClientOptions['log'] extends Array<Prisma.LogLevel | Prisma.LogDefinition> ? Prisma.GetEvents<ClientOptions['log']> : never : never,
   ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs
 > {
   [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['other'] }
@@ -77,13 +77,6 @@ export class PrismaClient<
    * Disconnect from the database
    */
   $disconnect(): $Utils.JsPromise<void>;
-
-  /**
-   * Add a middleware
-   * @deprecated since 4.16.0. For new code, prefer client extensions instead.
-   * @see https://pris.ly/d/extensions
-   */
-  $use(cb: Prisma.Middleware): void
 
 /**
    * Executes a prepared raw query and returns the number of affected rows.
@@ -241,8 +234,8 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.6.0
-   * Query Engine version: f676762280b54cd07c770017ed3711ddde35f37a
+   * Prisma Client JS version: 6.15.0
+   * Query Engine version: 85179d7826409ee107a6ba334b5e305ae3fba9fb
    */
   export type PrismaVersion = {
     client: string
@@ -913,16 +906,24 @@ export namespace Prisma {
     /**
      * @example
      * ```
-     * // Defaults to stdout
+     * // Shorthand for `emit: 'stdout'`
      * log: ['query', 'info', 'warn', 'error']
      * 
-     * // Emit as events
+     * // Emit as events only
      * log: [
-     *   { emit: 'stdout', level: 'query' },
-     *   { emit: 'stdout', level: 'info' },
-     *   { emit: 'stdout', level: 'warn' }
-     *   { emit: 'stdout', level: 'error' }
+     *   { emit: 'event', level: 'query' },
+     *   { emit: 'event', level: 'info' },
+     *   { emit: 'event', level: 'warn' }
+     *   { emit: 'event', level: 'error' }
      * ]
+     * 
+     * / Emit as events and log to stdout
+     * og: [
+     *  { emit: 'stdout', level: 'query' },
+     *  { emit: 'stdout', level: 'info' },
+     *  { emit: 'stdout', level: 'warn' }
+     *  { emit: 'stdout', level: 'error' }
+     * 
      * ```
      * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
      */
@@ -966,10 +967,15 @@ export namespace Prisma {
     emit: 'stdout' | 'event'
   }
 
-  export type GetLogType<T extends LogLevel | LogDefinition> = T extends LogDefinition ? T['emit'] extends 'event' ? T['level'] : never : never
-  export type GetEvents<T extends any> = T extends Array<LogLevel | LogDefinition> ?
-    GetLogType<T[0]> | GetLogType<T[1]> | GetLogType<T[2]> | GetLogType<T[3]>
-    : never
+  export type CheckIsLogLevel<T> = T extends LogLevel ? T : never;
+
+  export type GetLogType<T> = CheckIsLogLevel<
+    T extends LogDefinition ? T['level'] : T
+  >;
+
+  export type GetEvents<T extends any[]> = T extends Array<LogLevel | LogDefinition>
+    ? GetLogType<T[number]>
+    : never;
 
   export type QueryEvent = {
     timestamp: Date
@@ -1009,25 +1015,6 @@ export namespace Prisma {
     | 'runCommandRaw'
     | 'findRaw'
     | 'groupBy'
-
-  /**
-   * These options are being passed into the middleware as "params"
-   */
-  export type MiddlewareParams = {
-    model?: ModelName
-    action: PrismaAction
-    args: any
-    dataPath: string[]
-    runInTransaction: boolean
-  }
-
-  /**
-   * The `T` type makes sure, that the `return proceed` is not forgotten in the middleware implementation
-   */
-  export type Middleware<T = any> = (
-    params: MiddlewareParams,
-    next: (params: MiddlewareParams) => $Utils.JsPromise<T>,
-  ) => $Utils.JsPromise<T>
 
   // tested in getLogLevel.test.ts
   export function getLogLevel(log: Array<LogLevel | LogDefinition>): LogLevel | undefined;
@@ -1129,6 +1116,9 @@ export namespace Prisma {
     description: string | null
     definition: string | null
     status: string | null
+    lastRunAt: Date | null
+    lastRunId: string | null
+    lastRunStatus: string | null
     createdAt: Date | null
     updateAt: Date | null
   }
@@ -1140,6 +1130,9 @@ export namespace Prisma {
     description: string | null
     definition: string | null
     status: string | null
+    lastRunAt: Date | null
+    lastRunId: string | null
+    lastRunStatus: string | null
     createdAt: Date | null
     updateAt: Date | null
   }
@@ -1151,6 +1144,9 @@ export namespace Prisma {
     description: number
     definition: number
     status: number
+    lastRunAt: number
+    lastRunId: number
+    lastRunStatus: number
     createdAt: number
     updateAt: number
     _all: number
@@ -1164,6 +1160,9 @@ export namespace Prisma {
     description?: true
     definition?: true
     status?: true
+    lastRunAt?: true
+    lastRunId?: true
+    lastRunStatus?: true
     createdAt?: true
     updateAt?: true
   }
@@ -1175,6 +1174,9 @@ export namespace Prisma {
     description?: true
     definition?: true
     status?: true
+    lastRunAt?: true
+    lastRunId?: true
+    lastRunStatus?: true
     createdAt?: true
     updateAt?: true
   }
@@ -1186,6 +1188,9 @@ export namespace Prisma {
     description?: true
     definition?: true
     status?: true
+    lastRunAt?: true
+    lastRunId?: true
+    lastRunStatus?: true
     createdAt?: true
     updateAt?: true
     _all?: true
@@ -1270,6 +1275,9 @@ export namespace Prisma {
     description: string | null
     definition: string
     status: string
+    lastRunAt: Date | null
+    lastRunId: string | null
+    lastRunStatus: string | null
     createdAt: Date
     updateAt: Date
     _count: WorkflowCountAggregateOutputType | null
@@ -1298,6 +1306,9 @@ export namespace Prisma {
     description?: boolean
     definition?: boolean
     status?: boolean
+    lastRunAt?: boolean
+    lastRunId?: boolean
+    lastRunStatus?: boolean
     createdAt?: boolean
     updateAt?: boolean
     executions?: boolean | Workflow$executionsArgs<ExtArgs>
@@ -1311,6 +1322,9 @@ export namespace Prisma {
     description?: boolean
     definition?: boolean
     status?: boolean
+    lastRunAt?: boolean
+    lastRunId?: boolean
+    lastRunStatus?: boolean
     createdAt?: boolean
     updateAt?: boolean
   }, ExtArgs["result"]["workflow"]>
@@ -1322,6 +1336,9 @@ export namespace Prisma {
     description?: boolean
     definition?: boolean
     status?: boolean
+    lastRunAt?: boolean
+    lastRunId?: boolean
+    lastRunStatus?: boolean
     createdAt?: boolean
     updateAt?: boolean
   }, ExtArgs["result"]["workflow"]>
@@ -1333,11 +1350,14 @@ export namespace Prisma {
     description?: boolean
     definition?: boolean
     status?: boolean
+    lastRunAt?: boolean
+    lastRunId?: boolean
+    lastRunStatus?: boolean
     createdAt?: boolean
     updateAt?: boolean
   }
 
-  export type WorkflowOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "description" | "definition" | "status" | "createdAt" | "updateAt", ExtArgs["result"]["workflow"]>
+  export type WorkflowOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "name" | "description" | "definition" | "status" | "lastRunAt" | "lastRunId" | "lastRunStatus" | "createdAt" | "updateAt", ExtArgs["result"]["workflow"]>
   export type WorkflowInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     executions?: boolean | Workflow$executionsArgs<ExtArgs>
     _count?: boolean | WorkflowCountOutputTypeDefaultArgs<ExtArgs>
@@ -1357,6 +1377,9 @@ export namespace Prisma {
       description: string | null
       definition: string
       status: string
+      lastRunAt: Date | null
+      lastRunId: string | null
+      lastRunStatus: string | null
       createdAt: Date
       updateAt: Date
     }, ExtArgs["result"]["workflow"]>
@@ -1789,6 +1812,9 @@ export namespace Prisma {
     readonly description: FieldRef<"Workflow", 'String'>
     readonly definition: FieldRef<"Workflow", 'String'>
     readonly status: FieldRef<"Workflow", 'String'>
+    readonly lastRunAt: FieldRef<"Workflow", 'DateTime'>
+    readonly lastRunId: FieldRef<"Workflow", 'String'>
+    readonly lastRunStatus: FieldRef<"Workflow", 'String'>
     readonly createdAt: FieldRef<"Workflow", 'DateTime'>
     readonly updateAt: FieldRef<"Workflow", 'DateTime'>
   }
@@ -2225,8 +2251,18 @@ export namespace Prisma {
 
   export type AggregateWorkflowExecution = {
     _count: WorkflowExecutionCountAggregateOutputType | null
+    _avg: WorkflowExecutionAvgAggregateOutputType | null
+    _sum: WorkflowExecutionSumAggregateOutputType | null
     _min: WorkflowExecutionMinAggregateOutputType | null
     _max: WorkflowExecutionMaxAggregateOutputType | null
+  }
+
+  export type WorkflowExecutionAvgAggregateOutputType = {
+    creditsConsumed: number | null
+  }
+
+  export type WorkflowExecutionSumAggregateOutputType = {
+    creditsConsumed: number | null
   }
 
   export type WorkflowExecutionMinAggregateOutputType = {
@@ -2238,6 +2274,7 @@ export namespace Prisma {
     createdAt: Date | null
     startedAt: Date | null
     completedAt: Date | null
+    creditsConsumed: number | null
   }
 
   export type WorkflowExecutionMaxAggregateOutputType = {
@@ -2249,6 +2286,7 @@ export namespace Prisma {
     createdAt: Date | null
     startedAt: Date | null
     completedAt: Date | null
+    creditsConsumed: number | null
   }
 
   export type WorkflowExecutionCountAggregateOutputType = {
@@ -2260,9 +2298,18 @@ export namespace Prisma {
     createdAt: number
     startedAt: number
     completedAt: number
+    creditsConsumed: number
     _all: number
   }
 
+
+  export type WorkflowExecutionAvgAggregateInputType = {
+    creditsConsumed?: true
+  }
+
+  export type WorkflowExecutionSumAggregateInputType = {
+    creditsConsumed?: true
+  }
 
   export type WorkflowExecutionMinAggregateInputType = {
     id?: true
@@ -2273,6 +2320,7 @@ export namespace Prisma {
     createdAt?: true
     startedAt?: true
     completedAt?: true
+    creditsConsumed?: true
   }
 
   export type WorkflowExecutionMaxAggregateInputType = {
@@ -2284,6 +2332,7 @@ export namespace Prisma {
     createdAt?: true
     startedAt?: true
     completedAt?: true
+    creditsConsumed?: true
   }
 
   export type WorkflowExecutionCountAggregateInputType = {
@@ -2295,6 +2344,7 @@ export namespace Prisma {
     createdAt?: true
     startedAt?: true
     completedAt?: true
+    creditsConsumed?: true
     _all?: true
   }
 
@@ -2336,6 +2386,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: WorkflowExecutionAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: WorkflowExecutionSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: WorkflowExecutionMinAggregateInputType
@@ -2366,6 +2428,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: WorkflowExecutionCountAggregateInputType | true
+    _avg?: WorkflowExecutionAvgAggregateInputType
+    _sum?: WorkflowExecutionSumAggregateInputType
     _min?: WorkflowExecutionMinAggregateInputType
     _max?: WorkflowExecutionMaxAggregateInputType
   }
@@ -2379,7 +2443,10 @@ export namespace Prisma {
     createdAt: Date
     startedAt: Date | null
     completedAt: Date | null
+    creditsConsumed: number
     _count: WorkflowExecutionCountAggregateOutputType | null
+    _avg: WorkflowExecutionAvgAggregateOutputType | null
+    _sum: WorkflowExecutionSumAggregateOutputType | null
     _min: WorkflowExecutionMinAggregateOutputType | null
     _max: WorkflowExecutionMaxAggregateOutputType | null
   }
@@ -2407,6 +2474,7 @@ export namespace Prisma {
     createdAt?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    creditsConsumed?: boolean
     phases?: boolean | WorkflowExecution$phasesArgs<ExtArgs>
     workflow?: boolean | WorkflowDefaultArgs<ExtArgs>
     _count?: boolean | WorkflowExecutionCountOutputTypeDefaultArgs<ExtArgs>
@@ -2421,6 +2489,7 @@ export namespace Prisma {
     createdAt?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    creditsConsumed?: boolean
     workflow?: boolean | WorkflowDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["workflowExecution"]>
 
@@ -2433,6 +2502,7 @@ export namespace Prisma {
     createdAt?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    creditsConsumed?: boolean
     workflow?: boolean | WorkflowDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["workflowExecution"]>
 
@@ -2445,9 +2515,10 @@ export namespace Prisma {
     createdAt?: boolean
     startedAt?: boolean
     completedAt?: boolean
+    creditsConsumed?: boolean
   }
 
-  export type WorkflowExecutionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "workflowId" | "userId" | "trigger" | "status" | "createdAt" | "startedAt" | "completedAt", ExtArgs["result"]["workflowExecution"]>
+  export type WorkflowExecutionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "workflowId" | "userId" | "trigger" | "status" | "createdAt" | "startedAt" | "completedAt" | "creditsConsumed", ExtArgs["result"]["workflowExecution"]>
   export type WorkflowExecutionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     phases?: boolean | WorkflowExecution$phasesArgs<ExtArgs>
     workflow?: boolean | WorkflowDefaultArgs<ExtArgs>
@@ -2475,6 +2546,7 @@ export namespace Prisma {
       createdAt: Date
       startedAt: Date | null
       completedAt: Date | null
+      creditsConsumed: number
     }, ExtArgs["result"]["workflowExecution"]>
     composites: {}
   }
@@ -2908,6 +2980,7 @@ export namespace Prisma {
     readonly createdAt: FieldRef<"WorkflowExecution", 'DateTime'>
     readonly startedAt: FieldRef<"WorkflowExecution", 'DateTime'>
     readonly completedAt: FieldRef<"WorkflowExecution", 'DateTime'>
+    readonly creditsConsumed: FieldRef<"WorkflowExecution", 'Int'>
   }
     
 
@@ -3358,12 +3431,12 @@ export namespace Prisma {
 
   export type ExecutionPhaseAvgAggregateOutputType = {
     number: number | null
-    creditsCost: number | null
+    creditsConsumed: number | null
   }
 
   export type ExecutionPhaseSumAggregateOutputType = {
     number: number | null
-    creditsCost: number | null
+    creditsConsumed: number | null
   }
 
   export type ExecutionPhaseMinAggregateOutputType = {
@@ -3377,7 +3450,7 @@ export namespace Prisma {
     completedAt: Date | null
     inputs: string | null
     outputs: string | null
-    creditsCost: number | null
+    creditsConsumed: number | null
     workflowExecutionId: string | null
   }
 
@@ -3392,7 +3465,7 @@ export namespace Prisma {
     completedAt: Date | null
     inputs: string | null
     outputs: string | null
-    creditsCost: number | null
+    creditsConsumed: number | null
     workflowExecutionId: string | null
   }
 
@@ -3407,7 +3480,7 @@ export namespace Prisma {
     completedAt: number
     inputs: number
     outputs: number
-    creditsCost: number
+    creditsConsumed: number
     workflowExecutionId: number
     _all: number
   }
@@ -3415,12 +3488,12 @@ export namespace Prisma {
 
   export type ExecutionPhaseAvgAggregateInputType = {
     number?: true
-    creditsCost?: true
+    creditsConsumed?: true
   }
 
   export type ExecutionPhaseSumAggregateInputType = {
     number?: true
-    creditsCost?: true
+    creditsConsumed?: true
   }
 
   export type ExecutionPhaseMinAggregateInputType = {
@@ -3434,7 +3507,7 @@ export namespace Prisma {
     completedAt?: true
     inputs?: true
     outputs?: true
-    creditsCost?: true
+    creditsConsumed?: true
     workflowExecutionId?: true
   }
 
@@ -3449,7 +3522,7 @@ export namespace Prisma {
     completedAt?: true
     inputs?: true
     outputs?: true
-    creditsCost?: true
+    creditsConsumed?: true
     workflowExecutionId?: true
   }
 
@@ -3464,7 +3537,7 @@ export namespace Prisma {
     completedAt?: true
     inputs?: true
     outputs?: true
-    creditsCost?: true
+    creditsConsumed?: true
     workflowExecutionId?: true
     _all?: true
   }
@@ -3566,7 +3639,7 @@ export namespace Prisma {
     completedAt: Date | null
     inputs: string | null
     outputs: string | null
-    creditsCost: number | null
+    creditsConsumed: number | null
     workflowExecutionId: string
     _count: ExecutionPhaseCountAggregateOutputType | null
     _avg: ExecutionPhaseAvgAggregateOutputType | null
@@ -3600,7 +3673,7 @@ export namespace Prisma {
     completedAt?: boolean
     inputs?: boolean
     outputs?: boolean
-    creditsCost?: boolean
+    creditsConsumed?: boolean
     workflowExecutionId?: boolean
     execution?: boolean | WorkflowExecutionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["executionPhase"]>
@@ -3616,7 +3689,7 @@ export namespace Prisma {
     completedAt?: boolean
     inputs?: boolean
     outputs?: boolean
-    creditsCost?: boolean
+    creditsConsumed?: boolean
     workflowExecutionId?: boolean
     execution?: boolean | WorkflowExecutionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["executionPhase"]>
@@ -3632,7 +3705,7 @@ export namespace Prisma {
     completedAt?: boolean
     inputs?: boolean
     outputs?: boolean
-    creditsCost?: boolean
+    creditsConsumed?: boolean
     workflowExecutionId?: boolean
     execution?: boolean | WorkflowExecutionDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["executionPhase"]>
@@ -3648,11 +3721,11 @@ export namespace Prisma {
     completedAt?: boolean
     inputs?: boolean
     outputs?: boolean
-    creditsCost?: boolean
+    creditsConsumed?: boolean
     workflowExecutionId?: boolean
   }
 
-  export type ExecutionPhaseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "status" | "number" | "node" | "name" | "startedAt" | "completedAt" | "inputs" | "outputs" | "creditsCost" | "workflowExecutionId", ExtArgs["result"]["executionPhase"]>
+  export type ExecutionPhaseOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "status" | "number" | "node" | "name" | "startedAt" | "completedAt" | "inputs" | "outputs" | "creditsConsumed" | "workflowExecutionId", ExtArgs["result"]["executionPhase"]>
   export type ExecutionPhaseInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     execution?: boolean | WorkflowExecutionDefaultArgs<ExtArgs>
   }
@@ -3679,7 +3752,7 @@ export namespace Prisma {
       completedAt: Date | null
       inputs: string | null
       outputs: string | null
-      creditsCost: number | null
+      creditsConsumed: number | null
       workflowExecutionId: string
     }, ExtArgs["result"]["executionPhase"]>
     composites: {}
@@ -4115,7 +4188,7 @@ export namespace Prisma {
     readonly completedAt: FieldRef<"ExecutionPhase", 'DateTime'>
     readonly inputs: FieldRef<"ExecutionPhase", 'String'>
     readonly outputs: FieldRef<"ExecutionPhase", 'String'>
-    readonly creditsCost: FieldRef<"ExecutionPhase", 'Int'>
+    readonly creditsConsumed: FieldRef<"ExecutionPhase", 'Int'>
     readonly workflowExecutionId: FieldRef<"ExecutionPhase", 'String'>
   }
     
@@ -4547,6 +4620,9 @@ export namespace Prisma {
     description: 'description',
     definition: 'definition',
     status: 'status',
+    lastRunAt: 'lastRunAt',
+    lastRunId: 'lastRunId',
+    lastRunStatus: 'lastRunStatus',
     createdAt: 'createdAt',
     updateAt: 'updateAt'
   };
@@ -4562,7 +4638,8 @@ export namespace Prisma {
     status: 'status',
     createdAt: 'createdAt',
     startedAt: 'startedAt',
-    completedAt: 'completedAt'
+    completedAt: 'completedAt',
+    creditsConsumed: 'creditsConsumed'
   };
 
   export type WorkflowExecutionScalarFieldEnum = (typeof WorkflowExecutionScalarFieldEnum)[keyof typeof WorkflowExecutionScalarFieldEnum]
@@ -4579,7 +4656,7 @@ export namespace Prisma {
     completedAt: 'completedAt',
     inputs: 'inputs',
     outputs: 'outputs',
-    creditsCost: 'creditsCost',
+    creditsConsumed: 'creditsConsumed',
     workflowExecutionId: 'workflowExecutionId'
   };
 
@@ -4648,6 +4725,9 @@ export namespace Prisma {
     description?: StringNullableFilter<"Workflow"> | string | null
     definition?: StringFilter<"Workflow"> | string
     status?: StringFilter<"Workflow"> | string
+    lastRunAt?: DateTimeNullableFilter<"Workflow"> | Date | string | null
+    lastRunId?: StringNullableFilter<"Workflow"> | string | null
+    lastRunStatus?: StringNullableFilter<"Workflow"> | string | null
     createdAt?: DateTimeFilter<"Workflow"> | Date | string
     updateAt?: DateTimeFilter<"Workflow"> | Date | string
     executions?: WorkflowExecutionListRelationFilter
@@ -4660,6 +4740,9 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     definition?: SortOrder
     status?: SortOrder
+    lastRunAt?: SortOrderInput | SortOrder
+    lastRunId?: SortOrderInput | SortOrder
+    lastRunStatus?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updateAt?: SortOrder
     executions?: WorkflowExecutionOrderByRelationAggregateInput
@@ -4676,6 +4759,9 @@ export namespace Prisma {
     description?: StringNullableFilter<"Workflow"> | string | null
     definition?: StringFilter<"Workflow"> | string
     status?: StringFilter<"Workflow"> | string
+    lastRunAt?: DateTimeNullableFilter<"Workflow"> | Date | string | null
+    lastRunId?: StringNullableFilter<"Workflow"> | string | null
+    lastRunStatus?: StringNullableFilter<"Workflow"> | string | null
     createdAt?: DateTimeFilter<"Workflow"> | Date | string
     updateAt?: DateTimeFilter<"Workflow"> | Date | string
     executions?: WorkflowExecutionListRelationFilter
@@ -4688,6 +4774,9 @@ export namespace Prisma {
     description?: SortOrderInput | SortOrder
     definition?: SortOrder
     status?: SortOrder
+    lastRunAt?: SortOrderInput | SortOrder
+    lastRunId?: SortOrderInput | SortOrder
+    lastRunStatus?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updateAt?: SortOrder
     _count?: WorkflowCountOrderByAggregateInput
@@ -4705,6 +4794,9 @@ export namespace Prisma {
     description?: StringNullableWithAggregatesFilter<"Workflow"> | string | null
     definition?: StringWithAggregatesFilter<"Workflow"> | string
     status?: StringWithAggregatesFilter<"Workflow"> | string
+    lastRunAt?: DateTimeNullableWithAggregatesFilter<"Workflow"> | Date | string | null
+    lastRunId?: StringNullableWithAggregatesFilter<"Workflow"> | string | null
+    lastRunStatus?: StringNullableWithAggregatesFilter<"Workflow"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"Workflow"> | Date | string
     updateAt?: DateTimeWithAggregatesFilter<"Workflow"> | Date | string
   }
@@ -4721,6 +4813,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"WorkflowExecution"> | Date | string
     startedAt?: DateTimeNullableFilter<"WorkflowExecution"> | Date | string | null
     completedAt?: DateTimeNullableFilter<"WorkflowExecution"> | Date | string | null
+    creditsConsumed?: IntFilter<"WorkflowExecution"> | number
     phases?: ExecutionPhaseListRelationFilter
     workflow?: XOR<WorkflowScalarRelationFilter, WorkflowWhereInput>
   }
@@ -4734,6 +4827,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     startedAt?: SortOrderInput | SortOrder
     completedAt?: SortOrderInput | SortOrder
+    creditsConsumed?: SortOrder
     phases?: ExecutionPhaseOrderByRelationAggregateInput
     workflow?: WorkflowOrderByWithRelationInput
   }
@@ -4750,6 +4844,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"WorkflowExecution"> | Date | string
     startedAt?: DateTimeNullableFilter<"WorkflowExecution"> | Date | string | null
     completedAt?: DateTimeNullableFilter<"WorkflowExecution"> | Date | string | null
+    creditsConsumed?: IntFilter<"WorkflowExecution"> | number
     phases?: ExecutionPhaseListRelationFilter
     workflow?: XOR<WorkflowScalarRelationFilter, WorkflowWhereInput>
   }, "id">
@@ -4763,9 +4858,12 @@ export namespace Prisma {
     createdAt?: SortOrder
     startedAt?: SortOrderInput | SortOrder
     completedAt?: SortOrderInput | SortOrder
+    creditsConsumed?: SortOrder
     _count?: WorkflowExecutionCountOrderByAggregateInput
+    _avg?: WorkflowExecutionAvgOrderByAggregateInput
     _max?: WorkflowExecutionMaxOrderByAggregateInput
     _min?: WorkflowExecutionMinOrderByAggregateInput
+    _sum?: WorkflowExecutionSumOrderByAggregateInput
   }
 
   export type WorkflowExecutionScalarWhereWithAggregatesInput = {
@@ -4780,6 +4878,7 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"WorkflowExecution"> | Date | string
     startedAt?: DateTimeNullableWithAggregatesFilter<"WorkflowExecution"> | Date | string | null
     completedAt?: DateTimeNullableWithAggregatesFilter<"WorkflowExecution"> | Date | string | null
+    creditsConsumed?: IntWithAggregatesFilter<"WorkflowExecution"> | number
   }
 
   export type ExecutionPhaseWhereInput = {
@@ -4796,7 +4895,7 @@ export namespace Prisma {
     completedAt?: DateTimeNullableFilter<"ExecutionPhase"> | Date | string | null
     inputs?: StringNullableFilter<"ExecutionPhase"> | string | null
     outputs?: StringNullableFilter<"ExecutionPhase"> | string | null
-    creditsCost?: IntNullableFilter<"ExecutionPhase"> | number | null
+    creditsConsumed?: IntNullableFilter<"ExecutionPhase"> | number | null
     workflowExecutionId?: StringFilter<"ExecutionPhase"> | string
     execution?: XOR<WorkflowExecutionScalarRelationFilter, WorkflowExecutionWhereInput>
   }
@@ -4812,7 +4911,7 @@ export namespace Prisma {
     completedAt?: SortOrderInput | SortOrder
     inputs?: SortOrderInput | SortOrder
     outputs?: SortOrderInput | SortOrder
-    creditsCost?: SortOrderInput | SortOrder
+    creditsConsumed?: SortOrderInput | SortOrder
     workflowExecutionId?: SortOrder
     execution?: WorkflowExecutionOrderByWithRelationInput
   }
@@ -4831,7 +4930,7 @@ export namespace Prisma {
     completedAt?: DateTimeNullableFilter<"ExecutionPhase"> | Date | string | null
     inputs?: StringNullableFilter<"ExecutionPhase"> | string | null
     outputs?: StringNullableFilter<"ExecutionPhase"> | string | null
-    creditsCost?: IntNullableFilter<"ExecutionPhase"> | number | null
+    creditsConsumed?: IntNullableFilter<"ExecutionPhase"> | number | null
     workflowExecutionId?: StringFilter<"ExecutionPhase"> | string
     execution?: XOR<WorkflowExecutionScalarRelationFilter, WorkflowExecutionWhereInput>
   }, "id">
@@ -4847,7 +4946,7 @@ export namespace Prisma {
     completedAt?: SortOrderInput | SortOrder
     inputs?: SortOrderInput | SortOrder
     outputs?: SortOrderInput | SortOrder
-    creditsCost?: SortOrderInput | SortOrder
+    creditsConsumed?: SortOrderInput | SortOrder
     workflowExecutionId?: SortOrder
     _count?: ExecutionPhaseCountOrderByAggregateInput
     _avg?: ExecutionPhaseAvgOrderByAggregateInput
@@ -4870,7 +4969,7 @@ export namespace Prisma {
     completedAt?: DateTimeNullableWithAggregatesFilter<"ExecutionPhase"> | Date | string | null
     inputs?: StringNullableWithAggregatesFilter<"ExecutionPhase"> | string | null
     outputs?: StringNullableWithAggregatesFilter<"ExecutionPhase"> | string | null
-    creditsCost?: IntNullableWithAggregatesFilter<"ExecutionPhase"> | number | null
+    creditsConsumed?: IntNullableWithAggregatesFilter<"ExecutionPhase"> | number | null
     workflowExecutionId?: StringWithAggregatesFilter<"ExecutionPhase"> | string
   }
 
@@ -4881,6 +4980,9 @@ export namespace Prisma {
     description?: string | null
     definition: string
     status: string
+    lastRunAt?: Date | string | null
+    lastRunId?: string | null
+    lastRunStatus?: string | null
     createdAt?: Date | string
     updateAt?: Date | string
     executions?: WorkflowExecutionCreateNestedManyWithoutWorkflowInput
@@ -4893,6 +4995,9 @@ export namespace Prisma {
     description?: string | null
     definition: string
     status: string
+    lastRunAt?: Date | string | null
+    lastRunId?: string | null
+    lastRunStatus?: string | null
     createdAt?: Date | string
     updateAt?: Date | string
     executions?: WorkflowExecutionUncheckedCreateNestedManyWithoutWorkflowInput
@@ -4905,6 +5010,9 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     definition?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
+    lastRunAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    lastRunStatus?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updateAt?: DateTimeFieldUpdateOperationsInput | Date | string
     executions?: WorkflowExecutionUpdateManyWithoutWorkflowNestedInput
@@ -4917,6 +5025,9 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     definition?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
+    lastRunAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    lastRunStatus?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updateAt?: DateTimeFieldUpdateOperationsInput | Date | string
     executions?: WorkflowExecutionUncheckedUpdateManyWithoutWorkflowNestedInput
@@ -4929,6 +5040,9 @@ export namespace Prisma {
     description?: string | null
     definition: string
     status: string
+    lastRunAt?: Date | string | null
+    lastRunId?: string | null
+    lastRunStatus?: string | null
     createdAt?: Date | string
     updateAt?: Date | string
   }
@@ -4940,6 +5054,9 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     definition?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
+    lastRunAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    lastRunStatus?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updateAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -4951,6 +5068,9 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     definition?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
+    lastRunAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    lastRunStatus?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updateAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -4963,6 +5083,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
     phases?: ExecutionPhaseCreateNestedManyWithoutExecutionInput
     workflow: WorkflowCreateNestedOneWithoutExecutionsInput
   }
@@ -4976,6 +5097,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
     phases?: ExecutionPhaseUncheckedCreateNestedManyWithoutExecutionInput
   }
 
@@ -4987,6 +5109,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
     phases?: ExecutionPhaseUpdateManyWithoutExecutionNestedInput
     workflow?: WorkflowUpdateOneRequiredWithoutExecutionsNestedInput
   }
@@ -5000,6 +5123,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
     phases?: ExecutionPhaseUncheckedUpdateManyWithoutExecutionNestedInput
   }
 
@@ -5012,6 +5136,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
   }
 
   export type WorkflowExecutionUpdateManyMutationInput = {
@@ -5022,6 +5147,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
   }
 
   export type WorkflowExecutionUncheckedUpdateManyInput = {
@@ -5033,6 +5159,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
   }
 
   export type ExecutionPhaseCreateInput = {
@@ -5046,7 +5173,7 @@ export namespace Prisma {
     completedAt?: Date | string | null
     inputs?: string | null
     outputs?: string | null
-    creditsCost?: number | null
+    creditsConsumed?: number | null
     execution: WorkflowExecutionCreateNestedOneWithoutPhasesInput
   }
 
@@ -5061,7 +5188,7 @@ export namespace Prisma {
     completedAt?: Date | string | null
     inputs?: string | null
     outputs?: string | null
-    creditsCost?: number | null
+    creditsConsumed?: number | null
     workflowExecutionId: string
   }
 
@@ -5076,7 +5203,7 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     inputs?: NullableStringFieldUpdateOperationsInput | string | null
     outputs?: NullableStringFieldUpdateOperationsInput | string | null
-    creditsCost?: NullableIntFieldUpdateOperationsInput | number | null
+    creditsConsumed?: NullableIntFieldUpdateOperationsInput | number | null
     execution?: WorkflowExecutionUpdateOneRequiredWithoutPhasesNestedInput
   }
 
@@ -5091,7 +5218,7 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     inputs?: NullableStringFieldUpdateOperationsInput | string | null
     outputs?: NullableStringFieldUpdateOperationsInput | string | null
-    creditsCost?: NullableIntFieldUpdateOperationsInput | number | null
+    creditsConsumed?: NullableIntFieldUpdateOperationsInput | number | null
     workflowExecutionId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -5106,7 +5233,7 @@ export namespace Prisma {
     completedAt?: Date | string | null
     inputs?: string | null
     outputs?: string | null
-    creditsCost?: number | null
+    creditsConsumed?: number | null
     workflowExecutionId: string
   }
 
@@ -5121,7 +5248,7 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     inputs?: NullableStringFieldUpdateOperationsInput | string | null
     outputs?: NullableStringFieldUpdateOperationsInput | string | null
-    creditsCost?: NullableIntFieldUpdateOperationsInput | number | null
+    creditsConsumed?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ExecutionPhaseUncheckedUpdateManyInput = {
@@ -5135,7 +5262,7 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     inputs?: NullableStringFieldUpdateOperationsInput | string | null
     outputs?: NullableStringFieldUpdateOperationsInput | string | null
-    creditsCost?: NullableIntFieldUpdateOperationsInput | number | null
+    creditsConsumed?: NullableIntFieldUpdateOperationsInput | number | null
     workflowExecutionId?: StringFieldUpdateOperationsInput | string
   }
 
@@ -5165,6 +5292,17 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type DateTimeFilter<$PrismaModel = never> = {
@@ -5205,6 +5343,9 @@ export namespace Prisma {
     description?: SortOrder
     definition?: SortOrder
     status?: SortOrder
+    lastRunAt?: SortOrder
+    lastRunId?: SortOrder
+    lastRunStatus?: SortOrder
     createdAt?: SortOrder
     updateAt?: SortOrder
   }
@@ -5216,6 +5357,9 @@ export namespace Prisma {
     description?: SortOrder
     definition?: SortOrder
     status?: SortOrder
+    lastRunAt?: SortOrder
+    lastRunId?: SortOrder
+    lastRunStatus?: SortOrder
     createdAt?: SortOrder
     updateAt?: SortOrder
   }
@@ -5227,6 +5371,9 @@ export namespace Prisma {
     description?: SortOrder
     definition?: SortOrder
     status?: SortOrder
+    lastRunAt?: SortOrder
+    lastRunId?: SortOrder
+    lastRunStatus?: SortOrder
     createdAt?: SortOrder
     updateAt?: SortOrder
   }
@@ -5265,6 +5412,20 @@ export namespace Prisma {
     _max?: NestedStringNullableFilter<$PrismaModel>
   }
 
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
   export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
     in?: Date[] | string[]
@@ -5279,15 +5440,15 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[]
+    notIn?: number[]
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type ExecutionPhaseListRelationFilter = {
@@ -5314,6 +5475,11 @@ export namespace Prisma {
     createdAt?: SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrder
+    creditsConsumed?: SortOrder
+  }
+
+  export type WorkflowExecutionAvgOrderByAggregateInput = {
+    creditsConsumed?: SortOrder
   }
 
   export type WorkflowExecutionMaxOrderByAggregateInput = {
@@ -5325,6 +5491,7 @@ export namespace Prisma {
     createdAt?: SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrder
+    creditsConsumed?: SortOrder
   }
 
   export type WorkflowExecutionMinOrderByAggregateInput = {
@@ -5336,23 +5503,14 @@ export namespace Prisma {
     createdAt?: SortOrder
     startedAt?: SortOrder
     completedAt?: SortOrder
+    creditsConsumed?: SortOrder
   }
 
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  export type WorkflowExecutionSumOrderByAggregateInput = {
+    creditsConsumed?: SortOrder
   }
 
-  export type IntFilter<$PrismaModel = never> = {
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
     notIn?: number[]
@@ -5360,7 +5518,12 @@ export namespace Prisma {
     lte?: number | IntFieldRefInput<$PrismaModel>
     gt?: number | IntFieldRefInput<$PrismaModel>
     gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type IntNullableFilter<$PrismaModel = never> = {
@@ -5390,13 +5553,13 @@ export namespace Prisma {
     completedAt?: SortOrder
     inputs?: SortOrder
     outputs?: SortOrder
-    creditsCost?: SortOrder
+    creditsConsumed?: SortOrder
     workflowExecutionId?: SortOrder
   }
 
   export type ExecutionPhaseAvgOrderByAggregateInput = {
     number?: SortOrder
-    creditsCost?: SortOrder
+    creditsConsumed?: SortOrder
   }
 
   export type ExecutionPhaseMaxOrderByAggregateInput = {
@@ -5410,7 +5573,7 @@ export namespace Prisma {
     completedAt?: SortOrder
     inputs?: SortOrder
     outputs?: SortOrder
-    creditsCost?: SortOrder
+    creditsConsumed?: SortOrder
     workflowExecutionId?: SortOrder
   }
 
@@ -5425,29 +5588,13 @@ export namespace Prisma {
     completedAt?: SortOrder
     inputs?: SortOrder
     outputs?: SortOrder
-    creditsCost?: SortOrder
+    creditsConsumed?: SortOrder
     workflowExecutionId?: SortOrder
   }
 
   export type ExecutionPhaseSumOrderByAggregateInput = {
     number?: SortOrder
-    creditsCost?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[]
-    notIn?: number[]
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
+    creditsConsumed?: SortOrder
   }
 
   export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -5486,6 +5633,10 @@ export namespace Prisma {
 
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
   }
 
   export type DateTimeFieldUpdateOperationsInput = {
@@ -5540,8 +5691,12 @@ export namespace Prisma {
     connect?: ExecutionPhaseWhereUniqueInput | ExecutionPhaseWhereUniqueInput[]
   }
 
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
+  export type IntFieldUpdateOperationsInput = {
+    set?: number
+    increment?: number
+    decrement?: number
+    multiply?: number
+    divide?: number
   }
 
   export type ExecutionPhaseUpdateManyWithoutExecutionNestedInput = {
@@ -5586,14 +5741,6 @@ export namespace Prisma {
     connect?: WorkflowExecutionWhereUniqueInput
   }
 
-  export type IntFieldUpdateOperationsInput = {
-    set?: number
-    increment?: number
-    decrement?: number
-    multiply?: number
-    divide?: number
-  }
-
   export type NullableIntFieldUpdateOperationsInput = {
     set?: number | null
     increment?: number
@@ -5636,6 +5783,17 @@ export namespace Prisma {
     startsWith?: string | StringFieldRefInput<$PrismaModel>
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type NestedDateTimeFilter<$PrismaModel = never> = {
@@ -5705,31 +5863,6 @@ export namespace Prisma {
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
-  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    in?: Date[] | string[]
-    notIn?: Date[] | string[]
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
-    _count?: NestedIntFilter<$PrismaModel>
-    _min?: NestedDateTimeFilter<$PrismaModel>
-    _max?: NestedDateTimeFilter<$PrismaModel>
-  }
-
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
     in?: Date[] | string[] | null
@@ -5742,6 +5875,20 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedDateTimeNullableFilter<$PrismaModel>
     _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
+  export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    in?: Date[] | string[]
+    notIn?: Date[] | string[]
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeWithAggregatesFilter<$PrismaModel> | Date | string
+    _count?: NestedIntFilter<$PrismaModel>
+    _min?: NestedDateTimeFilter<$PrismaModel>
+    _max?: NestedDateTimeFilter<$PrismaModel>
   }
 
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -5806,6 +5953,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
     phases?: ExecutionPhaseCreateNestedManyWithoutExecutionInput
   }
 
@@ -5817,6 +5965,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
     phases?: ExecutionPhaseUncheckedCreateNestedManyWithoutExecutionInput
   }
 
@@ -5857,6 +6006,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"WorkflowExecution"> | Date | string
     startedAt?: DateTimeNullableFilter<"WorkflowExecution"> | Date | string | null
     completedAt?: DateTimeNullableFilter<"WorkflowExecution"> | Date | string | null
+    creditsConsumed?: IntFilter<"WorkflowExecution"> | number
   }
 
   export type ExecutionPhaseCreateWithoutExecutionInput = {
@@ -5870,7 +6020,7 @@ export namespace Prisma {
     completedAt?: Date | string | null
     inputs?: string | null
     outputs?: string | null
-    creditsCost?: number | null
+    creditsConsumed?: number | null
   }
 
   export type ExecutionPhaseUncheckedCreateWithoutExecutionInput = {
@@ -5884,7 +6034,7 @@ export namespace Prisma {
     completedAt?: Date | string | null
     inputs?: string | null
     outputs?: string | null
-    creditsCost?: number | null
+    creditsConsumed?: number | null
   }
 
   export type ExecutionPhaseCreateOrConnectWithoutExecutionInput = {
@@ -5903,6 +6053,9 @@ export namespace Prisma {
     description?: string | null
     definition: string
     status: string
+    lastRunAt?: Date | string | null
+    lastRunId?: string | null
+    lastRunStatus?: string | null
     createdAt?: Date | string
     updateAt?: Date | string
   }
@@ -5914,6 +6067,9 @@ export namespace Prisma {
     description?: string | null
     definition: string
     status: string
+    lastRunAt?: Date | string | null
+    lastRunId?: string | null
+    lastRunStatus?: string | null
     createdAt?: Date | string
     updateAt?: Date | string
   }
@@ -5953,7 +6109,7 @@ export namespace Prisma {
     completedAt?: DateTimeNullableFilter<"ExecutionPhase"> | Date | string | null
     inputs?: StringNullableFilter<"ExecutionPhase"> | string | null
     outputs?: StringNullableFilter<"ExecutionPhase"> | string | null
-    creditsCost?: IntNullableFilter<"ExecutionPhase"> | number | null
+    creditsConsumed?: IntNullableFilter<"ExecutionPhase"> | number | null
     workflowExecutionId?: StringFilter<"ExecutionPhase"> | string
   }
 
@@ -5975,6 +6131,9 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     definition?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
+    lastRunAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    lastRunStatus?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updateAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -5986,6 +6145,9 @@ export namespace Prisma {
     description?: NullableStringFieldUpdateOperationsInput | string | null
     definition?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
+    lastRunAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    lastRunId?: NullableStringFieldUpdateOperationsInput | string | null
+    lastRunStatus?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updateAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -5998,6 +6160,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
     workflow: WorkflowCreateNestedOneWithoutExecutionsInput
   }
 
@@ -6010,6 +6173,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
   }
 
   export type WorkflowExecutionCreateOrConnectWithoutPhasesInput = {
@@ -6036,6 +6200,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
     workflow?: WorkflowUpdateOneRequiredWithoutExecutionsNestedInput
   }
 
@@ -6048,6 +6213,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
   }
 
   export type WorkflowExecutionCreateManyWorkflowInput = {
@@ -6058,6 +6224,7 @@ export namespace Prisma {
     createdAt?: Date | string
     startedAt?: Date | string | null
     completedAt?: Date | string | null
+    creditsConsumed?: number
   }
 
   export type WorkflowExecutionUpdateWithoutWorkflowInput = {
@@ -6068,6 +6235,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
     phases?: ExecutionPhaseUpdateManyWithoutExecutionNestedInput
   }
 
@@ -6079,6 +6247,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
     phases?: ExecutionPhaseUncheckedUpdateManyWithoutExecutionNestedInput
   }
 
@@ -6090,6 +6259,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     startedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    creditsConsumed?: IntFieldUpdateOperationsInput | number
   }
 
   export type ExecutionPhaseCreateManyExecutionInput = {
@@ -6103,7 +6273,7 @@ export namespace Prisma {
     completedAt?: Date | string | null
     inputs?: string | null
     outputs?: string | null
-    creditsCost?: number | null
+    creditsConsumed?: number | null
   }
 
   export type ExecutionPhaseUpdateWithoutExecutionInput = {
@@ -6117,7 +6287,7 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     inputs?: NullableStringFieldUpdateOperationsInput | string | null
     outputs?: NullableStringFieldUpdateOperationsInput | string | null
-    creditsCost?: NullableIntFieldUpdateOperationsInput | number | null
+    creditsConsumed?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ExecutionPhaseUncheckedUpdateWithoutExecutionInput = {
@@ -6131,7 +6301,7 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     inputs?: NullableStringFieldUpdateOperationsInput | string | null
     outputs?: NullableStringFieldUpdateOperationsInput | string | null
-    creditsCost?: NullableIntFieldUpdateOperationsInput | number | null
+    creditsConsumed?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
   export type ExecutionPhaseUncheckedUpdateManyWithoutExecutionInput = {
@@ -6145,7 +6315,7 @@ export namespace Prisma {
     completedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     inputs?: NullableStringFieldUpdateOperationsInput | string | null
     outputs?: NullableStringFieldUpdateOperationsInput | string | null
-    creditsCost?: NullableIntFieldUpdateOperationsInput | number | null
+    creditsConsumed?: NullableIntFieldUpdateOperationsInput | number | null
   }
 
 
